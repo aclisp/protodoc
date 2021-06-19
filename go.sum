@@ -1,0 +1,5 @@
+github.com/yoheimuta/go-protoparser v1.3.0 h1:rHDOtpGuaFUFmT1qIlg/RrUjBB8GabEGA97siSEAD7E=
+github.com/yoheimuta/go-protoparser v3.4.0+incompatible h1:FdE033NnKLsvJFpfcy7eH9Rzl1k9f88HDmu9anoTsyY=
+github.com/yoheimuta/go-protoparser v3.4.0+incompatible/go.mod h1:NMMDARGayMyLM9oD1JUgKyF1Tv7aj9S+KcTG4lqvemo=
+github.com/yoheimuta/go-protoparser/v4 v4.3.0 h1:Onjbe74w3OIwdI1IHX9oTmnn8LnCDp4gCnDH/ee6ryA=
+github.com/yoheimuta/go-protoparser/v4 v4.3.0/go.mod h1:AHNNnSWnb0UoL4QgHPiOAg2BniQceFscPI5X/BZNHl8=
