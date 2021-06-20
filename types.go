@@ -8,138 +8,139 @@ import (
 )
 
 // a proto file is a parsing unit
-type protoFile struct {
+type ProtoFile struct {
 	// a proto file could have multiple service
-	services []service
+	Services []Service
 	// a proto file should have multiple object
-	objects []object
+	Objects []Object
 	// a proto file should have multiple enum
-	enums []enum
+	Enums []Enum
 }
 
-// a proto file could have multiple service
-type service struct {
-	// service only use comment placed at the beginning
-	comment string
+// a proto file could have multiple Service
+type Service struct {
+	// service only use Comment placed at the beginning
+	Comment string
 	// the package name of the proto file
-	packageName string
+	PackageName string
 	// my name
-	serviceName string
+	ServiceName string
 	// a service has multiple endpoint
-	infs []endpoint
+	Infs []Endpoint
 }
 
 // enndpoint is also called method or interface
-type endpoint struct {
+type Endpoint struct {
 	// the package name of the proto file
-	packageName string
+	PackageName string
 	// the enclosing service name
-	serviceName string
+	ServiceName string
 	// my name
-	methodName string
+	MethodName string
 	// the url path where api gateway resolves
-	urlPath string
+	URLPath string
 	// the http method, which is always POST
-	httpMethod string
-	// comment placed at the beginning, as well as inline-comment placed at the ending
-	comment string
+	HTTPMethod string
+	// Comment placed at the beginning, as well as inline-Comment placed at the ending
+	Comment string
 
-	typ rpcType
-	req request
-	res response
+	Typ RPCType
+	Req Request
+	Res Response
 }
 
-type rpcType int
+type RPCType int
 
 const (
-	unary = iota
-	serverStreaming
-	clientStreaming
-	bidirectionalStreaming
+	Unary = iota
+	ServerStreaming
+	ClientStreaming
+	BidirectionalStreaming
 )
 
-type request struct {
-	params []field
-	typ    string
+type Request struct {
+	Params []Field
+	Typ    string
 }
 
-type response struct {
-	params []field
-	typ    string
+type Response struct {
+	Params []Field
+	Typ    string
 }
 
-type field struct {
-	// comment placed at the beginning, as well as inline-comment placed at the ending
-	comment string
-	name    string
-	typ     string
-	repeat  bool
-	// the enclosing type name of this field
-	enclosing string
+type Field struct {
+	// Comment placed at the beginning, as well as inline-Comment placed at the ending
+	Comment string
+	Name    string
+	Typ     string
+	Repeat  bool
+	// the Enclosing type name of this field
+	Enclosing string
+	// reference to the enclosing proto file
+	protoFile *ProtoFile
 }
 
-// object is user-defined field type
-type object struct {
-	// only use comment placed at the beginning
-	comment string
+// Object is user-defined field type
+type Object struct {
+	// only use Comment placed at the beginning
+	Comment string
 	// refers by field.typ
-	name string
+	Name string
 	// attributes
-	attrs []field
+	Attrs []Field
 }
 
-// enum is user-defined type which has one of a pre-defined list of values
-type enum struct {
-	// only use comment placed at the beginning
-	comment string
+// Enum is user-defined type which has one of a pre-defined list of values
+type Enum struct {
+	// only use Comment placed at the beginning
+	Comment string
 	// refers by field.typ
-	name string
-	// constants
-	constants []enumField
+	Name string
+	// Constants
+	Constants []EnumField
 }
 
-type enumField struct {
-	// comment placed at the beginning, as well as inline-comment placed at the ending
-	comment string
-	name    string
-	val     string
-	// the enclosing type name of this field
-	enclosing string
+type EnumField struct {
+	// Comment placed at the beginning, as well as inline-Comment placed at the ending
+	Comment string
+	Name    string
+	Val     string
+	// the Enclosing type name of this field
+	Enclosing string
 }
 
-func (t rpcType) String() string {
+func (t RPCType) String() string {
 	switch t {
-	case unary:
+	case Unary:
 		return "unary"
-	case clientStreaming:
+	case ClientStreaming:
 		return "client-streaming"
-	case serverStreaming:
+	case ServerStreaming:
 		return "server-streaming"
-	case bidirectionalStreaming:
+	case BidirectionalStreaming:
 		return "bidirectional-streaming"
 	}
 	return "unknown"
 }
 
-func extract(pp *parser.Proto) (pf protoFile) {
+func (pf *ProtoFile) composeFrom(pp *parser.Proto) {
 	// find all services in proto body
 	for _, x := range pp.ProtoBody {
 		if service, ok := x.(*parser.Service); ok {
-			s := extractService(service, pp)
-			pf.services = append(pf.services, s)
+			pf.addService(service, pp)
 		}
 	}
-	pf.objects, pf.enums = composeObjectsAndEnums(pf, pp)
-	return pf
+	pf.addObjectsAndEnums(pp)
 }
 
-// extract our service from parser
-func extractService(ps *parser.Service, pp *parser.Proto) (s service) {
-	s.comment = composeHeadComment(ps.Comments)
-	s.packageName = extractPackageName(pp)
-	s.serviceName = ps.ServiceName
-	s.infs = composeInterfaces(s, ps, pp)
-	return s
+func (pf *ProtoFile) addService(ps *parser.Service, pp *parser.Proto) {
+	var s Service
+	s.Comment = composeHeadComment(ps.Comments)
+	s.PackageName = extractPackageName(pp)
+	s.ServiceName = ps.ServiceName
+	s.Infs = pf.composeInterfaces(s, ps, pp)
+
+	pf.Services = append(pf.Services, s)
 }
 
 func extractComment(pc *parser.Comment) string {
@@ -179,18 +180,18 @@ func extractPackageName(pp *parser.Proto) string {
 	return "(missed-package)"
 }
 
-func composeInterfaces(s service, ps *parser.Service, pp *parser.Proto) []endpoint {
-	eps := make([]endpoint, 0, len(ps.ServiceBody))
+func (pf *ProtoFile) composeInterfaces(s Service, ps *parser.Service, pp *parser.Proto) []Endpoint {
+	eps := make([]Endpoint, 0, len(ps.ServiceBody))
 	for _, x := range ps.ServiceBody {
-		var ep endpoint
-		ep.packageName = s.packageName
-		ep.serviceName = s.serviceName
+		var ep Endpoint
+		ep.PackageName = s.PackageName
+		ep.ServiceName = s.ServiceName
 		if rpc, ok := x.(*parser.RPC); ok {
-			ep.methodName = rpc.RPCName
-			ep.comment = composeHeadAndInlineComment(rpc.Comments, rpc.InlineComment, "\n")
-			ep.typ = extractRPCType(rpc)
-			ep.req = extractRPCRequest(rpc.RPCRequest, pp)
-			ep.res = extractRPCResponse(rpc.RPCResponse, pp)
+			ep.MethodName = rpc.RPCName
+			ep.Comment = composeHeadAndInlineComment(rpc.Comments, rpc.InlineComment, "\n")
+			ep.Typ = extractRPCType(rpc)
+			ep.Req = extractRPCRequest(rpc.RPCRequest, pp, pf)
+			ep.Res = extractRPCResponse(rpc.RPCResponse, pp, pf)
 		}
 		ep.validate()
 		eps = append(eps, ep)
@@ -198,38 +199,38 @@ func composeInterfaces(s service, ps *parser.Service, pp *parser.Proto) []endpoi
 	return eps
 }
 
-func (e *endpoint) validate() {
-	e.urlPath = "/" + e.packageName + "/" + e.serviceName + "/" + e.methodName
-	e.httpMethod = "POST"
-	if e.typ != unary {
-		e.httpMethod = "GET" // websocket uses GET
+func (e *Endpoint) validate() {
+	e.URLPath = "/" + e.PackageName + "/" + e.ServiceName + "/" + e.MethodName
+	e.HTTPMethod = "POST"
+	if e.Typ != Unary {
+		e.HTTPMethod = "GET" // websocket uses GET
 	}
 }
 
-func extractRPCType(rpc *parser.RPC) rpcType {
+func extractRPCType(rpc *parser.RPC) RPCType {
 	if rpc.RPCRequest.IsStream && rpc.RPCResponse.IsStream {
-		return bidirectionalStreaming
+		return BidirectionalStreaming
 	}
 	if rpc.RPCRequest.IsStream {
-		return clientStreaming
+		return ClientStreaming
 	}
 	if rpc.RPCResponse.IsStream {
-		return serverStreaming
+		return ServerStreaming
 	}
-	return unary
+	return Unary
 }
 
-func extractRPCRequest(rr *parser.RPCRequest, pp *parser.Proto) (r request) {
+func extractRPCRequest(rr *parser.RPCRequest, pp *parser.Proto, pf *ProtoFile) (r Request) {
 	msg := findMessage(pp, rr.MessageType)
-	r.params = composeFields(msg, msg.MessageName)
-	r.typ = rr.MessageType
+	r.Params = composeFields(msg, msg.MessageName, pf)
+	r.Typ = rr.MessageType
 	return r
 }
 
-func extractRPCResponse(rr *parser.RPCResponse, pp *parser.Proto) (r response) {
+func extractRPCResponse(rr *parser.RPCResponse, pp *parser.Proto, pf *ProtoFile) (r Response) {
 	msg := findMessage(pp, rr.MessageType)
-	r.params = composeFields(msg, msg.MessageName)
-	r.typ = rr.MessageType
+	r.Params = composeFields(msg, msg.MessageName, pf)
+	r.Typ = rr.MessageType
 	return r
 }
 
@@ -243,16 +244,17 @@ func findMessage(pp *parser.Proto, mt string) *parser.Message {
 	return nil
 }
 
-func composeFields(pm *parser.Message, enclosing string) []field {
-	fs := make([]field, 0, len(pm.MessageBody))
+func composeFields(pm *parser.Message, enclosing string, protoFile *ProtoFile) []Field {
+	fs := make([]Field, 0, len(pm.MessageBody))
 	for _, x := range pm.MessageBody {
 		if pf, ok := x.(*parser.Field); ok {
-			var f field
-			f.comment = composeHeadAndInlineComment(pf.Comments, pf.InlineComment, " ")
-			f.name = pf.FieldName
-			f.typ = pf.Type
-			f.repeat = pf.IsRepeated
-			f.enclosing = enclosing
+			var f Field
+			f.Comment = composeHeadAndInlineComment(pf.Comments, pf.InlineComment, " ")
+			f.Name = pf.FieldName
+			f.Typ = pf.Type
+			f.Repeat = pf.IsRepeated
+			f.Enclosing = enclosing
+			f.protoFile = protoFile
 			fs = append(fs, f)
 		}
 	}
@@ -278,41 +280,41 @@ var scalarTypes = map[string]struct{}{
 }
 
 // Type resolves f's type to a readable format in the scope of protoFile
-func (f field) Type(pf protoFile) (r string) {
-	if f.typ == "" {
+func (f Field) Type() (r string) {
+	if f.Typ == "" {
 		return "(nil)"
 	}
 	isScalar := func() (string, bool) {
-		_, ok := scalarTypes[f.typ]
-		return f.typ, ok
+		_, ok := scalarTypes[f.Typ]
+		return f.Typ, ok
 	}
 	isEnum := func() (string, bool) {
-		scopes := strings.Split(f.enclosing, ".")
+		scopes := strings.Split(f.Enclosing, ".")
 		for i := len(scopes); i >= 0; i-- {
 			scope := strings.Join(scopes[:i], ".")
-			qualified := f.typ
+			qualified := f.Typ
 			if scope != "" {
-				qualified = scope + "." + f.typ
+				qualified = scope + "." + f.Typ
 			}
-			for _, e := range pf.enums {
-				if qualified == e.name {
-					return e.name, true
+			for _, e := range f.protoFile.Enums {
+				if qualified == e.Name {
+					return e.Name, true
 				}
 			}
 		}
 		return "", false
 	}
 	isObject := func() (string, bool) {
-		scopes := strings.Split(f.enclosing, ".")
+		scopes := strings.Split(f.Enclosing, ".")
 		for i := len(scopes); i >= 0; i-- {
 			scope := strings.Join(scopes[:i], ".")
-			qualified := f.typ
+			qualified := f.Typ
 			if scope != "" {
-				qualified = scope + "." + f.typ
+				qualified = scope + "." + f.Typ
 			}
-			for _, o := range pf.objects {
-				if qualified == o.name {
-					return o.name, true
+			for _, o := range f.protoFile.Objects {
+				if qualified == o.Name {
+					return o.Name, true
 				}
 			}
 		}
@@ -325,21 +327,21 @@ func (f field) Type(pf protoFile) (r string) {
 	} else if typeName, ok := isObject(); ok {
 		r = "object " + typeName
 	} else {
-		r = "(" + f.typ + ")"
+		r = "(" + f.Typ + ")"
 	}
-	if f.repeat {
+	if f.Repeat {
 		r = "array of " + r
 	}
 	return r
 }
 
-// get all messages and enums in the proto, but exclude the messages used directly by interfaces
-func composeObjectsAndEnums(pf protoFile, pp *parser.Proto) (objects []object, enums []enum) {
+// add all messages and enums in the proto, but exclude the messages used directly by interfaces
+func (pf *ProtoFile) addObjectsAndEnums(pp *parser.Proto) {
 	excludes := make(map[string]bool)
-	for _, s := range pf.services {
-		for _, inf := range s.infs {
-			excludes[inf.req.typ] = true
-			excludes[inf.res.typ] = true
+	for _, s := range pf.Services {
+		for _, inf := range s.Infs {
+			excludes[inf.Req.Typ] = true
+			excludes[inf.Res.Typ] = true
 		}
 	}
 
@@ -348,47 +350,46 @@ func composeObjectsAndEnums(pf protoFile, pp *parser.Proto) (objects []object, e
 		for _, x := range body {
 			if enum, ok := x.(*parser.Enum); ok {
 				e := composeEnum(enum, enclosingName)
-				enums = append(enums, e)
+				pf.Enums = append(pf.Enums, e)
 			} else if msg, ok := x.(*parser.Message); ok {
-				o := composeObject(msg, enclosingName)
-				if excludes[o.name] {
+				o := composeObject(msg, enclosingName, pf)
+				if excludes[o.Name] {
 					continue
 				}
-				objects = append(objects, o)
+				pf.Objects = append(pf.Objects, o)
 				extractMessagesAndEnums(msg.MessageBody, enclosingName+msg.MessageName+".")
 			}
 		}
 	}
 
 	extractMessagesAndEnums(pp.ProtoBody, ".")
-	return objects, enums
 }
 
-func composeObject(pm *parser.Message, enclosingName string) (o object) {
+func composeObject(pm *parser.Message, enclosingName string, pf *ProtoFile) (o Object) {
 	enclosingName = enclosingName[1:] // trim the first "."
-	o.comment = composeHeadComment(pm.Comments)
-	o.name = enclosingName + pm.MessageName
-	o.attrs = composeFields(pm, o.name)
+	o.Comment = composeHeadComment(pm.Comments)
+	o.Name = enclosingName + pm.MessageName
+	o.Attrs = composeFields(pm, o.Name, pf)
 	return o
 }
 
-func composeEnum(pe *parser.Enum, enclosingName string) (e enum) {
+func composeEnum(pe *parser.Enum, enclosingName string) (e Enum) {
 	enclosingName = enclosingName[1:] // trim the first "."
-	e.comment = composeHeadComment(pe.Comments)
-	e.name = enclosingName + pe.EnumName
-	e.constants = composeEnumFields(pe, e.name)
+	e.Comment = composeHeadComment(pe.Comments)
+	e.Name = enclosingName + pe.EnumName
+	e.Constants = composeEnumFields(pe, e.Name)
 	return e
 }
 
-func composeEnumFields(pe *parser.Enum, enclosing string) []enumField {
-	fs := make([]enumField, 0, len(pe.EnumBody))
+func composeEnumFields(pe *parser.Enum, enclosing string) []EnumField {
+	fs := make([]EnumField, 0, len(pe.EnumBody))
 	for _, x := range pe.EnumBody {
 		if pf, ok := x.(*parser.EnumField); ok {
-			var f enumField
-			f.comment = composeHeadAndInlineComment(pf.Comments, pf.InlineComment, " ")
-			f.name = pf.Ident
-			f.val = pf.Number
-			f.enclosing = enclosing
+			var f EnumField
+			f.Comment = composeHeadAndInlineComment(pf.Comments, pf.InlineComment, " ")
+			f.Name = pf.Ident
+			f.Val = pf.Number
+			f.Enclosing = enclosing
 			fs = append(fs, f)
 		}
 	}

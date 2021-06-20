@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -28,6 +29,8 @@ func main() {
 		log.Fatalf("%v", err)
 	}
 
-	protoFile := extract(parsed)
-	protoFile.output()
+	protoFile := ProtoFile{}
+	protoFile.composeFrom(parsed)
+	//protoFile.output()
+	fmt.Print(protoFile.generateMarkdown())
 }
