@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"log"
+	"strings"
 	"text/template"
 )
 
@@ -15,13 +16,18 @@ const ProtoTpl = `
 {{.Comment}}
 {{range .Infs}}
 ### Method {{.ServiceName}}.{{.MethodName}}
+{{if .IsWebSocket}}
+WebSocket {{.Typ}}{{end}}
+> {{.HTTPMethod}} {{.URLPath}}
 
 {{.Comment}}
 
-Request
-{{template "fields" .Req.Params}}
-Response
-{{template "fields" .Res.Params}}
+{{if .Req.Empty}}Request is empty
+{{else}}Request parameters
+{{template "fields" .Req.Params}}{{end}}
+{{if .Res.Empty}}Response is empty
+{{else}}Response parameters
+{{template "fields" .Res.Params}}{{end}}
 {{end}}
 {{end}}
 
@@ -34,7 +40,7 @@ Response
 
 Constants
 
-|   Value   |   Name    |   Comment    |
+|   Value   |   Name    |  Description |
 | --------- | --------- | ------------ |
 {{- range .Constants}}
 | {{.Val}}  | {{.Name}} | {{.Comment}} |
@@ -55,16 +61,38 @@ Attributes
 {{- /* ------------------------------------------------------------- */ -}}
 
 {{define "fields"}}
-|   Name    |   Type    |   Comment    |
+|   Name    |   Type    |  Description |
 | --------- | --------- | ------------ |
 {{- range .}}
-| {{.Name}} | {{.Type}} | {{.Comment}} |
+| {{.Name}} | {{.TypeHRef}} | {{.Comment}} |
+{{- end}}
+{{end}}
+
+{{- /* ------------------------------------------------------------- */ -}}
+
+{{define "toc"}}
+{{- range .Services}}
+* [Service {{.ServiceName}}]({{.HRef}})
+{{- range .Infs}}
+    * [Method {{.ServiceName}}.{{.MethodName}}]({{.HRef}})
+{{- end}}
+{{- end}}
+* [Enums](#enums)
+{{- range .Enums}}
+	* [Enum {{.Name}}]({{.HRef}})
+{{- end}}
+* [Objects](#objects)
+{{- range .Objects}}
+	* [Object {{.Name}}]({{.HRef}})
 {{- end}}
 {{end}}
 
 {{- /* ------------------------------------------------------------- */ -}}
 
 # API Protocol
+
+Table of Contents
+{{template "toc" .}}
 
 {{range .Services}}
 {{template "service" .}}
@@ -90,4 +118,33 @@ func (pf ProtoFile) generateMarkdown() string {
 		log.Panicf("failed to execute template: %v", err)
 	}
 	return buf.String()
+}
+
+// HRef generates a cross reference ID used in markdown
+func (s Service) HRef() string {
+	return "#service-" + strings.ToLower(s.ServiceName)
+}
+
+func (e Endpoint) HRef() string {
+	return "#method-" + strings.ToLower(e.ServiceName) + strings.ToLower(e.MethodName)
+}
+
+func (o Object) HRef() string {
+	return "#object-" + strings.ToLower(o.Name)
+}
+
+func (e Enum) HRef() string {
+	return "#enum-" + strings.ToLower(e.Name)
+}
+
+func (r Request) Empty() bool {
+	return len(r.Params) == 0
+}
+
+func (r Response) Empty() bool {
+	return len(r.Params) == 0
+}
+
+func (e Endpoint) IsWebSocket() bool {
+	return e.Typ != Unary
 }

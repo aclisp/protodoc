@@ -279,53 +279,80 @@ var scalarTypes = map[string]struct{}{
 	"bytes":    {},
 }
 
+func (f Field) isScalar() (typename string, ok bool) {
+	_, ok = scalarTypes[f.Typ]
+	return f.Typ, ok
+}
+
+func (f Field) isEnum() (typename string, ok bool) {
+	scopes := strings.Split(f.Enclosing, ".")
+	for i := len(scopes); i >= 0; i-- {
+		scope := strings.Join(scopes[:i], ".")
+		qualified := f.Typ
+		if scope != "" {
+			qualified = scope + "." + f.Typ
+		}
+		for _, e := range f.protoFile.Enums {
+			if qualified == e.Name {
+				return e.Name, true
+			}
+		}
+	}
+	return "", false
+}
+
+func (f Field) isObject() (typename string, ok bool) {
+	scopes := strings.Split(f.Enclosing, ".")
+	for i := len(scopes); i >= 0; i-- {
+		scope := strings.Join(scopes[:i], ".")
+		qualified := f.Typ
+		if scope != "" {
+			qualified = scope + "." + f.Typ
+		}
+		for _, o := range f.protoFile.Objects {
+			if qualified == o.Name {
+				return o.Name, true
+			}
+		}
+	}
+	return "", false
+}
+
 // Type resolves f's type to a readable format in the scope of protoFile
 func (f Field) Type() (r string) {
 	if f.Typ == "" {
 		return "(nil)"
 	}
-	isScalar := func() (string, bool) {
-		_, ok := scalarTypes[f.Typ]
-		return f.Typ, ok
+	if typename, ok := f.isScalar(); ok {
+		r = typename
+	} else if typename, ok := f.isEnum(); ok {
+		r = "enum " + typename
+	} else if typename, ok := f.isObject(); ok {
+		r = "object " + typename
+	} else {
+		r = "(" + f.Typ + ")"
 	}
-	isEnum := func() (string, bool) {
-		scopes := strings.Split(f.Enclosing, ".")
-		for i := len(scopes); i >= 0; i-- {
-			scope := strings.Join(scopes[:i], ".")
-			qualified := f.Typ
-			if scope != "" {
-				qualified = scope + "." + f.Typ
-			}
-			for _, e := range f.protoFile.Enums {
-				if qualified == e.Name {
-					return e.Name, true
-				}
-			}
-		}
-		return "", false
+	if f.Repeat {
+		r = "array of " + r
 	}
-	isObject := func() (string, bool) {
-		scopes := strings.Split(f.Enclosing, ".")
-		for i := len(scopes); i >= 0; i-- {
-			scope := strings.Join(scopes[:i], ".")
-			qualified := f.Typ
-			if scope != "" {
-				qualified = scope + "." + f.Typ
-			}
-			for _, o := range f.protoFile.Objects {
-				if qualified == o.Name {
-					return o.Name, true
-				}
-			}
-		}
-		return "", false
+	return r
+}
+
+// TypeHRef is Type in addition to a href
+func (f Field) TypeHRef() (r string) {
+	if f.Typ == "" {
+		return "(nil)"
 	}
-	if typeName, ok := isScalar(); ok {
-		r = typeName
-	} else if typeName, ok := isEnum(); ok {
-		r = "enum " + typeName
-	} else if typeName, ok := isObject(); ok {
-		r = "object " + typeName
+	// convert typename to href id
+	href := func(typename string) string {
+		return strings.Join(strings.Split(strings.ToLower(typename), "."), "")
+	}
+	if typename, ok := f.isScalar(); ok {
+		r = typename
+	} else if typename, ok := f.isEnum(); ok {
+		r = "[enum " + typename + "](#enum-" + href(typename) + ")"
+	} else if typename, ok := f.isObject(); ok {
+		r = "[object " + typename + "](#object-" + href(typename) + ")"
 	} else {
 		r = "(" + f.Typ + ")"
 	}
