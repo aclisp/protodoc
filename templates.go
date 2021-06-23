@@ -17,8 +17,13 @@ const ProtoTpl = `
 {{range .Infs}}
 ### Method {{.ServiceName}}.{{.MethodName}}
 {{if .IsWebSocket}}
-WebSocket {{.Typ}}{{end}}
-> {{.HTTPMethod}} {{.URLPath}}
+WebSocket {{.Typ}}
+{{end}}
+> {{.HTTPMethod}} {{.URLPath}} <br/>
+{{- if not .IsWebSocket}}
+> Content-Type: application/json <br/>
+> Authorization: Bearer (token) <br/>
+{{- end}}
 
 {{.Comment}}
 
