@@ -84,11 +84,11 @@ Attributes
 {{- end}}
 * [Enums](#enums)
 {{- range .Enums}}
-	* [Enum {{.Name}}]({{.HRef}})
+    * [Enum {{.Name}}]({{.HRef}})
 {{- end}}
 * [Objects](#objects)
 {{- range .Objects}}
-	* [Object {{.Name}}]({{.HRef}})
+    * [Object {{.Name}}]({{.HRef}})
 {{- end}}
 {{end}}
 
