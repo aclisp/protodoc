@@ -338,14 +338,15 @@ func (f Field) Type() (r string) {
 	return r
 }
 
+// convert typename to href id
+func href(typename string) string {
+	return strings.Join(strings.Split(strings.ToLower(typename), "."), "")
+}
+
 // TypeHRef is Type in addition to a href
 func (f Field) TypeHRef() (r string) {
 	if f.Typ == "" {
 		return "(nil)"
-	}
-	// convert typename to href id
-	href := func(typename string) string {
-		return strings.Join(strings.Split(strings.ToLower(typename), "."), "")
 	}
 	if typename, ok := f.isScalar(); ok {
 		r = typename

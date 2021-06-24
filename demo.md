@@ -12,15 +12,15 @@ Table of Contents
     * [Method SDK.SetLabel](#method-sdksetlabel)
     * [Method SDK.SetAnnotation](#method-sdksetannotation)
 * [Enums](#enums)
-    * [Enum GameServer.Status.State](#enum-gameserver.status.state)
+    * [Enum GameServer.Status.State](#enum-gameserverstatusstate)
 * [Objects](#objects)
     * [Object KeyValue](#object-keyvalue)
     * [Object GameServer](#object-gameserver)
-    * [Object GameServer.ObjectMeta](#object-gameserver.objectmeta)
-    * [Object GameServer.Spec](#object-gameserver.spec)
-    * [Object GameServer.Spec.Health](#object-gameserver.spec.health)
-    * [Object GameServer.Status](#object-gameserver.status)
-    * [Object GameServer.Status.Port](#object-gameserver.status.port)
+    * [Object GameServer.ObjectMeta](#object-gameserverobjectmeta)
+    * [Object GameServer.Spec](#object-gameserverspec)
+    * [Object GameServer.Spec.Health](#object-gameserverspechealth)
+    * [Object GameServer.Status](#object-gameserverstatus)
+    * [Object GameServer.Status.Port](#object-gameserverstatusport)
 
 
 

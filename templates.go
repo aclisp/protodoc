@@ -135,11 +135,11 @@ func (e Endpoint) HRef() string {
 }
 
 func (o Object) HRef() string {
-	return "#object-" + strings.ToLower(o.Name)
+	return "#object-" + href(o.Name)
 }
 
 func (e Enum) HRef() string {
-	return "#enum-" + strings.ToLower(e.Name)
+	return "#enum-" + href(e.Name)
 }
 
 func (r Request) Empty() bool {
