@@ -15,3 +15,5 @@
 # vendor/
 *.txt
 protodoc
+comet.*
+rrec.*
