@@ -59,8 +59,9 @@ Constants
 
 {{.Comment}}
 
-Attributes
-{{template "fields" .Attrs}}
+{{if .Empty}}It has no attributes
+{{else}}Attributes
+{{template "fields" .Attrs}}{{end}}
 {{- end}}
 
 {{- /* ------------------------------------------------------------- */ -}}
@@ -148,6 +149,10 @@ func (r Request) Empty() bool {
 
 func (r Response) Empty() bool {
 	return len(r.Params) == 0
+}
+
+func (o Object) Empty() bool {
+	return len(o.Attrs) == 0
 }
 
 func (e Endpoint) IsWebSocket() bool {
