@@ -7,7 +7,7 @@ import (
 	"github.com/yoheimuta/go-protoparser/v4/parser"
 )
 
-// a proto file is a parsing unit
+// ProtoFile is a parsing unit
 type ProtoFile struct {
 	// a proto file could have multiple service
 	Services []Service
@@ -17,7 +17,7 @@ type ProtoFile struct {
 	Enums []Enum
 }
 
-// a proto file could have multiple Service
+// Service : a proto file could have multiple Service
 type Service struct {
 	// service only use Comment placed at the beginning
 	Comment string
@@ -29,7 +29,7 @@ type Service struct {
 	Infs []Endpoint
 }
 
-// enndpoint is also called method or interface
+// Endpoint is also called method or interface
 type Endpoint struct {
 	// the package name of the proto file
 	PackageName string
@@ -123,7 +123,7 @@ func (t RPCType) String() string {
 	return "unknown"
 }
 
-func (pf *ProtoFile) composeFrom(pp *parser.Proto) {
+func (pf *ProtoFile) ComposeFrom(pp *parser.Proto) {
 	// find all services in proto body
 	for _, x := range pp.ProtoBody {
 		if service, ok := x.(*parser.Service); ok {

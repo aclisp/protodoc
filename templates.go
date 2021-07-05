@@ -117,7 +117,7 @@ Table of Contents
 {{- end}}
 `
 
-func (pf ProtoFile) generateMarkdown() string {
+func (pf ProtoFile) GenerateMarkdown() string {
 	proto := template.Must(template.New("proto").Parse(ProtoTpl))
 	buf := bytes.Buffer{}
 	if err := proto.Execute(&buf, pf); err != nil {

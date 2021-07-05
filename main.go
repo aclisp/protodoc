@@ -30,7 +30,7 @@ func main() {
 	}
 
 	protoFile := ProtoFile{}
-	protoFile.composeFrom(parsed)
+	protoFile.ComposeFrom(parsed)
 	//protoFile.output()
-	fmt.Print(protoFile.generateMarkdown())
+	fmt.Print(protoFile.GenerateMarkdown())
 }
